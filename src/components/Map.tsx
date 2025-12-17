@@ -182,7 +182,8 @@ export default function Map() {
               <div className="text-black">
                 <strong>{station.name}</strong><br />
                 ID: {station.id}<br />
-                Trips started: {station.count}
+                Trips started: {activeStation?.id === station.id && selectedMonth ? flows.reduce((sum, f) => sum + f.count, 0) : station.count}
+                {activeStation?.id === station.id && selectedMonth ? <span className="text-xs text-gray-500 ml-1"> (Month)</span> : <span className="text-xs text-gray-500 ml-1">(Year)</span>}
               </div>
             </Popup>
           </CircleMarker>
