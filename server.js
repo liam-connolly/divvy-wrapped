@@ -44,8 +44,9 @@ app.get('/api/station/:id/flows', (req, res) => {
         FROM flows f
         JOIN stations s ON f.end_station_id = s.id
         WHERE f.start_station_id = ?
+
         ORDER BY f.count DESC
-        LIMIT 500
+        LIMIT 5000
     `;
     
     db.all(sql, [id], (err, rows) => {

@@ -24,18 +24,37 @@ async function processFile(filePath) {
   for await (const record of parser) {
     const { start_station_id, end_station_id, start_lat, start_lng, start_station_name, end_station_name, end_lat, end_lng } = record;
 
-    if (!start_station_id || !end_station_id || !start_lat || !end_lat) continue;
 
-    // Collect stations
+    if (!start_station_id || !start_lat) continue;
+    if ((!end_station_id && (!end_lat || !end_lng))) continue;
+
+
+    // Collect stations & Handle virtual stations for non-station drop-offs
+    let finalEndId = end_station_id;
+    let finalEndName = end_station_name;
+
     if (!stations.has(start_station_id)) {
         stations.set(start_station_id, { id: start_station_id, name: start_station_name, lat: start_lat, lng: start_lng });
     }
-    if (!stations.has(end_station_id)) {
-        stations.set(end_station_id, { id: end_station_id, name: end_station_name, lat: end_lat, lng: end_lng });
+
+
+    if (end_station_id && end_station_id.trim() !== '') {
+        if (!stations.has(end_station_id)) {
+            stations.set(end_station_id, { id: end_station_id, name: end_station_name, lat: end_lat, lng: end_lng });
+        }
+    } else {
+        // Non-station ride end (Virtual Station)
+        // Use exact coordinates to preserve precision as requested
+        finalEndId = `LOC_${end_lat}_${end_lng}`;
+        finalEndName = "Public Lock / Other";
+        
+        if (!stations.has(finalEndId)) {
+            stations.set(finalEndId, { id: finalEndId, name: finalEndName, lat: end_lat, lng: end_lng });
+        }
     }
 
     // Aggregate flows
-    const flowKey = `${start_station_id}|${end_station_id}`;
+    const flowKey = `${start_station_id}|${finalEndId}`;
     flows.set(flowKey, (flows.get(flowKey) || 0) + 1);
   }
 }

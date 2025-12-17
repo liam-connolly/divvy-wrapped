@@ -35,6 +35,7 @@ async function processFile(filePath) {
       }
     }
 
+
     // Process end station
     if (record.end_station_id && record.end_lat && record.end_lng) {
       if (!stations.has(record.end_station_id)) {
@@ -43,12 +44,10 @@ async function processFile(filePath) {
           name: record.end_station_name,
           lat: parseFloat(record.end_lat),
           lng: parseFloat(record.end_lng),
-          count: 1
+          count: 0 // Do not count ends, only starts
         });
-      } else {
-        const station = stations.get(record.end_station_id);
-        station.count++;
       }
+      // Do not increment for existing stations either
     }
   }
 }

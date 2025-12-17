@@ -1,8 +1,10 @@
 
-import { MapContainer, TileLayer, CircleMarker, Popup, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, CircleMarker, Popup, useMap, useMapEvents } from 'react-leaflet';
 import FlowLine from './FlowLine';
 import ControlPanel from './ControlPanel';
+
 import { useEffect, useState, useMemo } from 'react';
+import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
 interface Station {
@@ -37,6 +39,16 @@ function MapController({ selectedStation, onReset }: { selectedStation: Station 
     return null;
 }
 
+// Background click handler to deselect station
+function BackgroundClickHandler({ onDeselect }: { onDeselect: () => void }) {
+    useMapEvents({
+        click: () => {
+            onDeselect();
+        }
+    });
+    return null;
+}
+
 export default function Map() {
   const [stations, setStations] = useState<Station[]>([]);
   const [activeStation, setActiveStation] = useState<Station | null>(null);
@@ -60,6 +72,11 @@ export default function Map() {
         .then(res => res.json())
         .then(data => setFlows(data))
         .catch(err => console.error("Error fetching flows:", err));
+  };
+
+  const handleDeselect = () => {
+      setActiveStation(null);
+      setFlows([]);
   };
 
   const filteredStations = useMemo(() => {
@@ -103,6 +120,7 @@ export default function Map() {
         />
         
         <MapController selectedStation={stationToZoom} onReset={() => setStationToZoom(null)} />
+        <BackgroundClickHandler onDeselect={handleDeselect} />
 
         {/* Draw flows first so they are under stations */}
         {activeStation && flows.length > 0 && (() => {
@@ -136,14 +154,17 @@ export default function Map() {
                 weight: 0 
             }}
             eventHandlers={{
-                click: () => handleStationClick(station)
+                click: (e) => {
+                    L.DomEvent.stopPropagation(e); // Prevent map click from firing
+                    handleStationClick(station);
+                }
             }}
           >
             <Popup>
               <div className="text-black">
                 <strong>{station.name}</strong><br />
                 ID: {station.id}<br />
-                Trips started/ended here: {station.count}
+                Trips started: {station.count}
               </div>
             </Popup>
           </CircleMarker>
