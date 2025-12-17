@@ -49,12 +49,14 @@ function BackgroundClickHandler({ onDeselect }: { onDeselect: () => void }) {
     return null;
 }
 
+
 export default function Map() {
   const [stations, setStations] = useState<Station[]>([]);
   const [activeStation, setActiveStation] = useState<Station | null>(null);
   const [flows, setFlows] = useState<Flow[]>([]);
   const [hideRacks, setHideRacks] = useState(false);
   const [stationToZoom, setStationToZoom] = useState<Station | null>(null);
+  const [selectedMonth, setSelectedMonth] = useState<number | null>(null);
 
   useEffect(() => {
     fetch('/data/stations.json')
@@ -63,15 +65,25 @@ export default function Map() {
       .catch(err => console.error('Error loading stations:', err));
   }, []);
 
+  // Fetch flows when station or month changes
+  useEffect(() => {
+      if (activeStation) {
+          let url = `/api/station/${activeStation.id}/flows`;
+          if (selectedMonth) {
+              url += `?month=${selectedMonth}`;
+          }
+
+          fetch(url)
+            .then(res => res.json())
+            .then(data => setFlows(data))
+            .catch(err => console.error("Error fetching flows:", err));
+      }
+  }, [activeStation, selectedMonth]);
+
+
+
   const handleStationClick = (station: Station) => {
     setActiveStation(station);
-    setFlows([]); // Clear previous flows immediately using React state
-    
-    // Fetch new flows from backend API
-    fetch(`/api/station/${station.id}/flows`)
-        .then(res => res.json())
-        .then(data => setFlows(data))
-        .catch(err => console.error("Error fetching flows:", err));
   };
 
   const handleDeselect = () => {
@@ -106,6 +118,7 @@ export default function Map() {
         stations={stations} 
         onFilterChange={setHideRacks} 
         onStationSelect={onStationSelect}
+        onMonthChange={setSelectedMonth}
       />
       
       <MapContainer 
@@ -155,7 +168,12 @@ export default function Map() {
             }}
             eventHandlers={{
                 click: (e) => {
-                    L.DomEvent.stopPropagation(e); // Prevent map click from firing
+                    // Try preventing on both the DOM event and the Leaflet event object
+                    if (e.originalEvent) {
+                        e.originalEvent.preventDefault();
+                        e.originalEvent.stopPropagation();
+                    }
+                    L.DomEvent.stopPropagation(e as any); // fallback
                     handleStationClick(station);
                 }
             }}

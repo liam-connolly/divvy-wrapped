@@ -6,7 +6,9 @@ import { parse } from 'csv-parse';
 const DATA_DIR = path.join(process.cwd(), 'divvyTripData');
 const OUTPUT_FILE = path.join(process.cwd(), 'public/data/stations.json');
 
+
 const stations = new Map();
+const nameToId = new Map(); // Name -> Canonical ID
 
 async function processFile(filePath) {
   console.log(`Processing ${path.basename(filePath)}...`);
@@ -17,31 +19,44 @@ async function processFile(filePath) {
 
   for await (const record of parser) {
     // Process start station
-    if (record.start_station_id && record.start_lat && record.start_lng) {
-      if (!stations.has(record.start_station_id)) {
-        stations.set(record.start_station_id, {
-          id: record.start_station_id,
-          name: record.start_station_name,
+    if (record.start_station_id && record.start_lat && record.start_lng && record.start_station_name) {
+      const name = record.start_station_name.trim();
+      const rawId = record.start_station_id;
+
+      if (!nameToId.has(name)) {
+          nameToId.set(name, rawId);
+      }
+      const canonicalId = nameToId.get(name);
+
+      if (!stations.has(canonicalId)) {
+        stations.set(canonicalId, {
+          id: canonicalId,
+          name: name,
           lat: parseFloat(record.start_lat),
           lng: parseFloat(record.start_lng),
           count: 1
         });
       } else {
-        const station = stations.get(record.start_station_id);
+        const station = stations.get(canonicalId);
         station.count++;
-        // Average out lat/lng slightly to improve accuracy over time? 
-        // Or just keep first. Keeping first is faster and usually sufficient for docking stations.
-        // Actually, let's just keep the first one found to avoid drift or issues with floating point math.
       }
     }
 
 
     // Process end station
-    if (record.end_station_id && record.end_lat && record.end_lng) {
-      if (!stations.has(record.end_station_id)) {
-        stations.set(record.end_station_id, {
-          id: record.end_station_id,
-          name: record.end_station_name,
+    if (record.end_station_id && record.end_lat && record.end_lng && record.end_station_name) {
+      const name = record.end_station_name.trim();
+      const rawId = record.end_station_id;
+
+      if (!nameToId.has(name)) {
+          nameToId.set(name, rawId);
+      }
+      const canonicalId = nameToId.get(name);
+
+      if (!stations.has(canonicalId)) {
+        stations.set(canonicalId, {
+          id: canonicalId,
+          name: name,
           lat: parseFloat(record.end_lat),
           lng: parseFloat(record.end_lng),
           count: 0 // Do not count ends, only starts

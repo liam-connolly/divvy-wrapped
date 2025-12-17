@@ -1,13 +1,15 @@
 
 import { useState } from 'react';
 
+
 interface Props {
   stations: { id: string; name: string; lat: number; lng: number }[];
   onStationSelect: (station: { lat: number; lng: number }) => void;
   onFilterChange: (hideRacks: boolean) => void;
+  onMonthChange: (month: number | null) => void;
 }
 
-export default function ControlPanel({ stations, onStationSelect, onFilterChange }: Props) {
+export default function ControlPanel({ stations, onStationSelect, onFilterChange, onMonthChange }: Props) {
 
   const [isOpen, setIsOpen] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -26,6 +28,7 @@ export default function ControlPanel({ stations, onStationSelect, onFilterChange
   };
 
   return (
+
     <div 
       style={{
         position: 'absolute',
@@ -35,7 +38,7 @@ export default function ControlPanel({ stations, onStationSelect, onFilterChange
         color: 'white',
         borderRadius: '12px',
         zIndex: 1000,
-        width: isOpen ? '300px' : 'auto',
+        width: '300px', // Fixed width even when closed
         border: '1px solid #333',
         fontFamily: 'Inter, sans-serif',
         display: 'flex',
@@ -56,7 +59,19 @@ export default function ControlPanel({ stations, onStationSelect, onFilterChange
         onClick={() => setIsOpen(!isOpen)}
       >
         <span style={{ fontWeight: 800, fontSize: '1.1rem' }}>Divvy Wrapped 2025</span>
-        <span style={{ fontSize: '0.8rem', opacity: 0.7 }}>{isOpen ? 'Close' : 'Menu'}</span>
+        
+        {/* Toggle Icon */}
+        <div style={{ opacity: 0.7 }}>
+            {isOpen ? (
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="18 15 12 9 6 15"></polyline>
+                </svg>
+            ) : (
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="6 9 12 15 18 9"></polyline>
+                </svg>
+            )}
+        </div>
       </div>
 
       {isOpen && (
@@ -140,9 +155,41 @@ export default function ControlPanel({ stations, onStationSelect, onFilterChange
             </div>
           </div>
 
+
           {/* Filters Section */}
           <div>
             <h3 style={{ fontSize: '0.9rem', color: '#888', textTransform: 'uppercase', marginBottom: '8px' }}>Filters</h3>
+            
+            {/* Month Filter */}
+            <div style={{ marginBottom: '12px' }}>
+                <label style={{ display: 'block', marginBottom: '4px', fontSize: '0.85rem', color: '#ccc' }}>Time Period</label>
+                <select 
+                    onChange={(e) => onMonthChange(e.target.value === 'all' ? null : parseInt(e.target.value))}
+                    style={{
+                        width: '100%',
+                        padding: '8px',
+                        backgroundColor: '#222',
+                        color: 'white',
+                        border: '1px solid #444',
+                        borderRadius: '8px'
+                    }}
+                >
+                    <option value="all">Entire Year (2025)</option>
+                    <option value="1">January</option>
+                    <option value="2">February</option>
+                    <option value="3">March</option>
+                    <option value="4">April</option>
+                    <option value="5">May</option>
+                    <option value="6">June</option>
+                    <option value="7">July</option>
+                    <option value="8">August</option>
+                    <option value="9">September</option>
+                    <option value="10">October</option>
+                    <option value="11">November</option>
+                    <option value="12">December</option>
+                </select>
+            </div>
+
             <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', padding: '8px', backgroundColor: '#222', borderRadius: '8px' }}>
               <input 
                 type="checkbox" 

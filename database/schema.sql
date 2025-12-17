@@ -6,11 +6,13 @@ CREATE TABLE IF NOT EXISTS stations (
     lng REAL
 );
 
+
 CREATE TABLE IF NOT EXISTS flows (
     start_station_id TEXT,
     end_station_id TEXT,
+    month INTEGER,
     count INTEGER,
-    PRIMARY KEY (start_station_id, end_station_id),
+    PRIMARY KEY (start_station_id, end_station_id, month),
     FOREIGN KEY(start_station_id) REFERENCES stations(id),
     FOREIGN KEY(end_station_id) REFERENCES stations(id)
 );

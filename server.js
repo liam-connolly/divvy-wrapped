@@ -31,25 +31,39 @@ app.get('/api/stations', (req, res) => {
     });
 });
 
-// Get flows for a specific station
+
+// Get flows for a station (top 5000 destinations)
+// Supports optional ?month= parameter (1-12)
 app.get('/api/station/:id/flows', (req, res) => {
-    const { id } = req.params;
-    const sql = `
+    const id = req.params.id;
+    const month = req.query.month ? parseInt(req.query.month) : null;
+
+    let sql = `
         SELECT 
-            f.count,
-            s.id as end_station_id,
+            f.end_station_id,
             s.name as end_station_name,
             s.lat as end_lat,
-            s.lng as end_lng
+            s.lng as end_lng,
+            SUM(f.count) as count
         FROM flows f
         JOIN stations s ON f.end_station_id = s.id
         WHERE f.start_station_id = ?
+    `;
 
-        ORDER BY f.count DESC
+    const params = [id];
+
+    if (month) {
+        sql += ` AND f.month = ?`;
+        params.push(month);
+    }
+
+    sql += `
+        GROUP BY f.end_station_id
+        ORDER BY count DESC
         LIMIT 5000
     `;
     
-    db.all(sql, [id], (err, rows) => {
+    db.all(sql, params, (err, rows) => {
         if (err) {
             res.status(500).json({ error: err.message });
             return;

@@ -10,9 +10,11 @@ const SCHEMA_FILE = path.join(process.cwd(), 'database/schema.sql');
 
 const db = new sqlite3.Database(DB_FILE);
 
+
 // In-memory aggregators to minimize DB writes
 const stations = new Map();
 const flows = new Map(); // Key: "start_id|end_id", Value: count
+const nameToId = new Map(); // Name -> Canonical ID
 
 async function processFile(filePath) {
   console.log(`Processing ${path.basename(filePath)}...`);
@@ -29,22 +31,48 @@ async function processFile(filePath) {
     if ((!end_station_id && (!end_lat || !end_lng))) continue;
 
 
-    // Collect stations & Handle virtual stations for non-station drop-offs
+
+    // Extract Month
+    // Format: "2025-01-21 17:23:54"
+    let month = 0;
+    if (record.started_at) {
+        const dateParts = record.started_at.split(' ')[0].split('-'); // ["2025", "01", "21"]
+        if (dateParts.length > 1) {
+            month = parseInt(dateParts[1], 10);
+        }
+    }
+
+    // --- Deduplication Logic ---
+    let finalStartId = start_station_id;
+    if (start_station_name) {
+        const sName = start_station_name.trim();
+        if (!nameToId.has(sName)) {
+            nameToId.set(sName, start_station_id);
+        }
+        finalStartId = nameToId.get(sName);
+    }
+    
+    // Collect Start Station
+    if (!stations.has(finalStartId)) {
+        stations.set(finalStartId, { id: finalStartId, name: start_station_name, lat: start_lat, lng: start_lng });
+    }
+
+    // Handle End Station
     let finalEndId = end_station_id;
     let finalEndName = end_station_name;
 
-    if (!stations.has(start_station_id)) {
-        stations.set(start_station_id, { id: start_station_id, name: start_station_name, lat: start_lat, lng: start_lng });
-    }
+    if (end_station_id && end_station_id.trim() !== '' && end_station_name) {
+        const eName = end_station_name.trim();
+         if (!nameToId.has(eName)) {
+            nameToId.set(eName, end_station_id);
+        }
+        finalEndId = nameToId.get(eName);
 
-
-    if (end_station_id && end_station_id.trim() !== '') {
-        if (!stations.has(end_station_id)) {
-            stations.set(end_station_id, { id: end_station_id, name: end_station_name, lat: end_lat, lng: end_lng });
+        if (!stations.has(finalEndId)) {
+            stations.set(finalEndId, { id: finalEndId, name: end_station_name, lat: end_lat, lng: end_lng });
         }
     } else {
         // Non-station ride end (Virtual Station)
-        // Use exact coordinates to preserve precision as requested
         finalEndId = `LOC_${end_lat}_${end_lng}`;
         finalEndName = "Public Lock / Other";
         
@@ -54,7 +82,8 @@ async function processFile(filePath) {
     }
 
     // Aggregate flows
-    const flowKey = `${start_station_id}|${finalEndId}`;
+    // Key: "start_id|end_id|month"
+    const flowKey = `${finalStartId}|${finalEndId}|${month}`;
     flows.set(flowKey, (flows.get(flowKey) || 0) + 1);
   }
 }
@@ -93,10 +122,10 @@ async function main() {
             stmtStation.finalize();
 
             // Insert Flows
-            const stmtFlow = db.prepare("INSERT OR REPLACE INTO flows (start_station_id, end_station_id, count) VALUES (?, ?, ?)");
+            const stmtFlow = db.prepare("INSERT OR REPLACE INTO flows (start_station_id, end_station_id, month, count) VALUES (?, ?, ?, ?)");
             for (const [key, count] of flows.entries()) {
-                const [startId, endId] = key.split('|');
-                stmtFlow.run(startId, endId, count);
+                const [startId, endId, monthStr] = key.split('|');
+                stmtFlow.run(startId, endId, parseInt(monthStr), count);
             }
             stmtFlow.finalize();
 
