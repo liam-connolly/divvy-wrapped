@@ -1,15 +1,20 @@
-
 import express from 'express';
 import sqlite3 from 'sqlite3';
 import cors from 'cors';
 import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
-const PORT = 3000;
-const DB_FILE = path.join(process.cwd(), 'database/divvy.db');
+const PORT = process.env.PORT || 3000;
+const DB_FILE = path.join(__dirname, 'database/divvy.db');
 
 app.use(cors());
-app.use(express.json());
+
+// Serve static files from the React app
+app.use(express.static(path.join(__dirname, 'dist')));
 
 const db = new sqlite3.Database(DB_FILE, sqlite3.OPEN_READONLY, (err) => {
     if (err) {
@@ -70,6 +75,12 @@ app.get('/api/station/:id/flows', (req, res) => {
         }
         res.json(rows);
     });
+});
+
+// The "catchall" handler: for any request that doesn't
+// match one above, send back React's index.html file.
+app.get(/(.*)/, (req, res) => {
+  res.sendFile(path.join(__dirname, 'dist/index.html'));
 });
 
 app.listen(PORT, () => {
