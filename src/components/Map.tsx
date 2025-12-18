@@ -57,6 +57,8 @@ export default function Map() {
   const [hideRacks, setHideRacks] = useState(false);
   const [stationToZoom, setStationToZoom] = useState<Station | null>(null);
   const [selectedMonth, setSelectedMonth] = useState<number | null>(null);
+  const [selectedFlow, setSelectedFlow] = useState<{ flow: Flow, latlng: L.LatLng } | null>(null);
+  const [hoveredFlowId, setHoveredFlowId] = useState<string | null>(null);
 
   useEffect(() => {
     fetch('/data/stations.json')
@@ -68,6 +70,9 @@ export default function Map() {
   // Fetch flows when station or month changes
   useEffect(() => {
       if (activeStation) {
+          // Clear selected flow when station changes
+          setSelectedFlow(null);
+          
           let url = `/api/station/${activeStation.id}/flows`;
           if (selectedMonth) {
               url += `?month=${selectedMonth}`;
@@ -84,11 +89,13 @@ export default function Map() {
 
   const handleStationClick = (station: Station) => {
     setActiveStation(station);
+    setSelectedFlow(null);
   };
 
   const handleDeselect = () => {
       setActiveStation(null);
       setFlows([]);
+      setSelectedFlow(null);
   };
 
   const filteredStations = useMemo(() => {
@@ -151,9 +158,26 @@ export default function Map() {
                     // Scale width: min 1px, max 10px based on relative density
                     weight={Math.max(1, (flow.count / maxFlow) * 12)}
                     opacity={0.6}
+                    onClick={(latlng) => setSelectedFlow({ flow, latlng })}
+                    isHovered={hoveredFlowId === flow.end_station_id}
+                    onHoverChange={(hovered) => setHoveredFlowId(hovered ? flow.end_station_id : null)}
                 />
             ));
         })()}
+
+        {selectedFlow && (
+            <Popup 
+              position={selectedFlow.latlng} 
+              eventHandlers={{ remove: () => setSelectedFlow(null) }}
+            >
+                <div className="text-black">
+                    <div className="text-xs uppercase text-gray-500 mb-1">Ride Route</div>
+                    <strong>To: {selectedFlow.flow.end_station_name}</strong><br/>
+                    <span className="text-lg font-bold">{selectedFlow.flow.count}</span> trips
+                    {selectedMonth && <span className="text-xs text-gray-500 ml-1">(in Month {selectedMonth})</span>}
+                </div>
+            </Popup>
+        )}
 
         {filteredStations.map(station => (
           <CircleMarker 

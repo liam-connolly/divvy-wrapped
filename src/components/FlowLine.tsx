@@ -9,10 +9,17 @@ interface FlowLineProps {
   color: string;
   weight: number;
   opacity: number;
+  onClick?: (latlng: L.LatLng) => void;
+  isHovered?: boolean;
+  onHoverChange?: (hovered: boolean) => void;
 }
 
-export default function FlowLine({ positions, color, weight, opacity }: FlowLineProps) {
+export default function FlowLine({ positions, color, weight, opacity, onClick, isHovered = false, onHoverChange }: FlowLineProps) {
   const map = useMap();
+
+  // Dynamic style based on hover
+  const displayWeight = isHovered ? Math.max(5, weight * 2) : weight;
+  const displayOpacity = isHovered ? 0.9 : opacity;
 
   useEffect(() => {
     if (!map) return;
@@ -20,35 +27,52 @@ export default function FlowLine({ positions, color, weight, opacity }: FlowLine
     // Create the polyline
     const polyline = L.polyline(positions, {
       color,
-      weight,
-      opacity,
+      weight: displayWeight,
+      opacity: displayOpacity,
+      bubblingMouseEvents: false 
     }).addTo(map);
 
+    // Event Listeners
+    polyline.on('mouseover', (e) => {
+        onHoverChange?.(true);
+        L.DomEvent.stopPropagation(e as any);
+        // @ts-ignore
+        if (polyline._path) polyline._path.style.cursor = 'pointer';
+    });
+
+    polyline.on('mouseout', (e) => {
+        onHoverChange?.(false);
+        L.DomEvent.stopPropagation(e as any);
+    });
+
+    if (onClick) {
+        polyline.on('click', (e) => {
+            L.DomEvent.stopPropagation(e as any); // Stop map click from firing
+            L.DomEvent.preventDefault(e as any);
+            onClick(e.latlng);
+        });
+    }
+
     // Create the arrow decorator
-    // We adjust pixelSize based on weight to make bigger flows have bigger arrows
-    const arrowSize = Math.max(5, weight * 1.5); 
+    const arrowSize = Math.max(5, displayWeight * 1.5); 
     
     const decorator = L.polylineDecorator(polyline, {
       patterns: [
         {
-          offset: '100%', // Arrow at the end
+          offset: '100%', 
           repeat: 0,
           symbol: L.Symbol.arrowHead({
             pixelSize: arrowSize,
-            polygon: false, // V-shape arrow
+            polygon: false, 
             pathOptions: { 
                 stroke: true, 
                 color: color, 
-                weight: Math.max(1, weight / 2),
-                opacity: opacity 
+                weight: Math.max(1, displayWeight / 2),
+                opacity: displayOpacity,
+                interactive: false 
             }
           })
-        },
-        // Optional: Add arrows along the line for longer flows? 
-        // Let's stick to one at the end for now to reduce clutter, 
-        // or maybe one in the middle if it's long.
-        // User asked "demonstrated in arrows... in the direction".
-        // A single arrow at the end works well for A->B.
+        }
       ]
     }).addTo(map);
 
@@ -56,7 +80,7 @@ export default function FlowLine({ positions, color, weight, opacity }: FlowLine
       map.removeLayer(polyline);
       map.removeLayer(decorator);
     };
-  }, [map, positions, color, weight, opacity]);
+  }, [map, positions, color, weight, opacity, onClick, onHoverChange, displayWeight, displayOpacity]);
 
   return null;
 }
