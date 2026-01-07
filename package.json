@@ -11,9 +11,11 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@libsql/client": "^0.17.0",
     "@types/leaflet": "^1.9.21",
     "cors": "^2.8.5",
     "csv-parse": "^6.1.0",
+    "dotenv": "^17.2.3",
     "express": "^5.2.1",
     "leaflet": "^1.9.4",
     "leaflet-polylinedecorator": "^1.6.0",
