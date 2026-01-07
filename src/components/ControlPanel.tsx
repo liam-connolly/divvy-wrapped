@@ -33,17 +33,22 @@ export default function ControlPanel({ stations, onStationSelect, onFilterChange
       style={{
         position: 'absolute',
         top: '20px',
-        right: '20px',
+
         backgroundColor: 'rgba(0, 0, 0, 0.9)',
         color: 'white',
         borderRadius: '12px',
         zIndex: 1000,
-        width: '300px', // Fixed width even when closed
+        width: '100%', 
+        maxWidth: '360px', // Mobile friendly width
         border: '1px solid #333',
         fontFamily: 'Inter, sans-serif',
         display: 'flex',
         flexDirection: 'column',
-        maxHeight: '90vh',
+        maxHeight: '85vh', // Slightly smaller to avoid bottom bars
+        // Mobile specific adjustments applied via inline-style hacks or just generic safe defaults
+        left: window.innerWidth < 768 ? '50%' : 'auto',
+        transform: window.innerWidth < 768 ? 'translateX(-50%)' : 'none',
+        right: window.innerWidth < 768 ? 'auto' : '20px',
       }}
     >
       {/* Header */}
