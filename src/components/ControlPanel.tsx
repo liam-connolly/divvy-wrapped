@@ -58,7 +58,7 @@ export default function ControlPanel({ stations, onStationSelect, onFilterChange
         }}
         onClick={() => setIsOpen(!isOpen)}
       >
-        <span style={{ fontWeight: 800, fontSize: '1.1rem' }}>Divvy Wrapped 2025</span>
+        <span style={{ fontWeight: 800, fontSize: '1.1rem' }}>Divvy 2025 Year in Review</span>
         
         {/* Toggle Icon */}
         <div style={{ opacity: 0.7 }}>
@@ -148,8 +148,13 @@ export default function ControlPanel({ stations, onStationSelect, onFilterChange
                 </div>
                 {showFAQ && (
                     <div style={{ marginTop: '10px', fontSize: '0.85rem', color: '#aaa' }}>
+                      <p><strong>Q: What is this?</strong><br/>This is a visualization of the flow of Divvy bikes across Chicago in 2025. Click on any station to see where rides go. This project was inspired by the work done by Zack Youngren at <a href="https://www.citibikedata.nyc/">https://www.citibikedata.nyc</a>, please check it out!</p>
                         <p><strong>Q: What do the arrows mean?</strong><br/>They show the direction and volume of trips originating from the selected station.</p>
-                        <p style={{ marginTop: '8px' }}><strong>Q: Why are some lines thicker?</strong><br/>Thicker lines represent more popular routes.</p>
+                        <p style={{ marginTop: '8px' }}><strong>Q: Why are some lines thicker?</strong><br/>Thicker lines represent more popular routes relative to the selected station.</p>
+                        <p style={{ marginTop: '8px' }}><strong>Q: Where is the data from?</strong><br/>Divvy publishes data from the previous month at the start of the next month. You can find that data <a href="https://divvy-tripdata.s3.amazonaws.com/index.html">here</a>.</p>  
+                        <p style={{ marginTop: '8px' }}><strong>Q: What are public racks?</strong><br/>Some "Stations" are not actually Divvy stations but instead are just plain old bike racks where riders that choose an electric bike can finish their ride.</p>  
+                        <p style={{ marginTop: '8px' }}><strong>Q: Where can I find the code for this?</strong><br/>You can find the code for this project <a href="https://github.com/liam-connolly/divvy-wrapped">here</a>.</p>
+                        <p style={{ marginTop: '8px' }}><strong>Q: Why does this look messy?</strong><br/>I'm working on it, it's a lot of data to process and visualize please <a href="https://github.com/liam-connolly/divvy-wrapped/issues">open an issue on GitHub</a> if you have any suggestions!</p>
                     </div>
                 )}
             </div>
